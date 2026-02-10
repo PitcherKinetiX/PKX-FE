@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    /* Use Tailwind default color palette to avoid unknown custom utility issues */
+    @apply m-0 min-h-screen font-sans antialiased bg-slate-950 text-slate-100;
+  }
+}

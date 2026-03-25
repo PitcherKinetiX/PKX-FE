@@ -55,3 +55,15 @@ export interface AnalysisStatus {
   completedAt: string | null;
   errorMessage: string | null;
 }
+
+export interface PageResponse<T> {
+  items: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}

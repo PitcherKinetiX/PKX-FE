@@ -7,10 +7,18 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from 'recharts';
-import type { JointMetrics } from '../../types/analysis.types';
+
+interface RadarChartData {
+  shoulderStress: number;
+  elbowLoad: number;
+  wristLoad: number;
+  spineAngle: number;
+  kneeStability: number;
+  hipRotation: number;
+}
 
 interface RadarChartProps {
-  jointMetrics: JointMetrics;
+  jointMetrics: RadarChartData;
 }
 
 export default function RadarChart({ jointMetrics }: RadarChartProps) {
@@ -62,7 +70,7 @@ export default function RadarChart({ jointMetrics }: RadarChartProps) {
             fillOpacity={0.5}
           />
           <Tooltip
-            formatter={(value: number) => [`${value} / 100`, '위험도']}
+            formatter={(value) => [`${value} / 100`, '위험도']}
             contentStyle={{
               backgroundColor: '#020617',
               border: '1px solid #1f2937',

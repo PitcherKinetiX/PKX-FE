@@ -18,8 +18,6 @@ const DUMMY_ANALYSES: AnalysisListItem[] = [
     completedAt: '2025-12-19T10:31:00',
     riskGrade: 'GOOD',
     overallRiskScore: 28,
-    consistencyScore: 87,
-    medicalRiskScore: 22,
   },
   {
     analysisId: 2,
@@ -30,8 +28,6 @@ const DUMMY_ANALYSES: AnalysisListItem[] = [
     completedAt: '2025-12-15T14:21:00',
     riskGrade: 'NORMAL',
     overallRiskScore: 45,
-    consistencyScore: 72,
-    medicalRiskScore: 48,
   },
   {
     analysisId: 3,
@@ -42,8 +38,6 @@ const DUMMY_ANALYSES: AnalysisListItem[] = [
     completedAt: '2025-12-10T21:16:00',
     riskGrade: 'CAUTION',
     overallRiskScore: 68,
-    consistencyScore: 58,
-    medicalRiskScore: 72,
   },
 ];
 
@@ -88,15 +82,8 @@ export default function HistoryPage() {
     setSelectedAnalyses([]);
   };
 
-  const handleDelete = (analysisId: number) => {
-    if (window.confirm('이 분석을 삭제하시겠습니까?')) {
-      deleteMutation.mutate(analysisId);
-    }
-  };
-
-  const handleDownload = (analysisId: number) => {
-    downloadMutation.mutate(analysisId);
-  };
+  void deleteMutation;
+  void downloadMutation;
 
   const getStatusBadge = (score?: number): 'GOOD' | 'NORMAL' | 'CAUTION' | 'DANGER' => {
     if (!score) return 'NORMAL';
@@ -130,7 +117,7 @@ export default function HistoryPage() {
     );
   }
 
-  const apiAnalyses = data?.content || [];
+  const apiAnalyses = data?.items || [];
   const useDummy = apiAnalyses.length === 0;
 
   const baseAnalyses = useDummy ? DUMMY_ANALYSES : apiAnalyses;
@@ -237,7 +224,7 @@ export default function HistoryPage() {
                   검색 결과가 없습니다.
                 </div>
               ) : (
-                filteredAnalyses.map((analysis) => {
+                filteredAnalyses.map((analysis: AnalysisListItem) => {
                   const isExpanded = expandedAnalysisId === analysis.analysisId;
                   const consistencyScore = (analysis as any).consistencyScore || 87;
                   const medicalRiskScore = (analysis as any).medicalRiskScore || 22;
@@ -278,7 +265,7 @@ export default function HistoryPage() {
                               </p>
                             </div>
                           </div>
-                          <StatusBadge status={analysis.riskGrade || getStatusBadge(analysis.overallRiskScore)} />
+                          <StatusBadge status={(analysis.riskGrade || getStatusBadge(analysis.overallRiskScore)) as 'GOOD' | 'NORMAL' | 'CAUTION' | 'DANGER'} />
                         </div>
 
                         <div className="grid grid-cols-3 gap-6 mb-4">
@@ -325,7 +312,7 @@ export default function HistoryPage() {
                                 전반적으로 안정한 투구 폼을 보이고 있습니다. 어깨와 팔꿈치의 각도가 이상적이며, 하체의 안정성도 우수합니다.
                               </p>
                             </div>
-                            <StatusBadge status={analysis.riskGrade || 'GOOD'} />
+                            <StatusBadge status={(analysis.riskGrade || 'GOOD') as 'GOOD' | 'NORMAL' | 'CAUTION' | 'DANGER'} />
                           </div>
 
                           {/* Three Metrics Cards */}

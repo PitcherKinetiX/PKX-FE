@@ -25,7 +25,7 @@ export const analysisApi = {
   },
 
   getList: async (page = 0, size = 10) => {
-    const response = await apiClient.get<{ data: { content: AnalysisListItem[] } }>('/analyses', {
+    const response = await apiClient.get<{ data: { items: AnalysisListItem[] } }>('/analyses', {
       params: { page, size, sort: 'createdAt,desc' },
     });
     return response.data.data;
@@ -37,7 +37,7 @@ export const analysisApi = {
   },
 
   downloadPdf: async (analysisId: number) => {
-    const response = await apiClient.get(`/analyses/${analysisId}/pdf`, {
+    const response = await apiClient.get(`/analyses/${analysisId}/report`, {
       responseType: 'blob',
     });
     return response.data;

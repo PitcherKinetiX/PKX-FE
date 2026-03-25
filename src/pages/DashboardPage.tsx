@@ -13,8 +13,8 @@ export default function DashboardPage() {
   const [latestAnalysis, setLatestAnalysis] = useState<AnalysisListItem | null>(null);
 
   useEffect(() => {
-    if (data?.content && data.content.length > 0) {
-      setLatestAnalysis(data.content[0]);
+    if (data?.items && data.items.length > 0) {
+      setLatestAnalysis(data.items[0]);
     }
   }, [data]);
 

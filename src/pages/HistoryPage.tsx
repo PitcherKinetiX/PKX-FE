@@ -68,15 +68,6 @@ export default function HistoryPage() {
   const deleteMutation = useDeleteAnalysis();
   const downloadMutation = useDownloadPdf();
 
-  const mockJointMetrics = {
-    features: DUMMY_FEATURES,
-    shoulderStress: 25,
-    elbowLoad: 30,
-    wristLoad: 20,
-    spineAngle: 35,
-    kneeStability: 28,
-    hipRotation: 32,
-  };
 
   const toggleAnalysisSelection = (analysisId: number) => {
     setSelectedAnalyses(prev => {

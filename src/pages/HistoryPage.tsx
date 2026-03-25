@@ -6,7 +6,23 @@ import StatusBadge from '../components/ui/StatusBadge';
 import RadarChart from '../components/dashboard/RadarChart';
 import GaugeBar from '../components/ui/GaugeBar';
 import { useAnalysisList, useDeleteAnalysis, useDownloadPdf } from '../hooks/useAnalysis';
-import type { AnalysisListItem } from '../types/analysis.types';
+import type { AnalysisListItem, FeatureDetail } from '../types/analysis.types';
+
+const DUMMY_FEATURES: FeatureDetail[] = [
+  { index: 0, name: 'L_elbow_angle', type: 'angle', userError: 0.084, generalError: 0.046, level: '양호' },
+  { index: 1, name: 'R_elbow_angle', type: 'angle', userError: 0.052, generalError: 0.038, level: '정상' },
+  { index: 2, name: 'L_shoulder_angle', type: 'angle', userError: 0.121, generalError: 0.067, level: '주의' },
+  { index: 3, name: 'R_shoulder_angle', type: 'angle', userError: 0.095, generalError: 0.055, level: '양호' },
+  { index: 4, name: 'L_hip_angle', type: 'angle', userError: 0.145, generalError: 0.082, level: '주의' },
+  { index: 5, name: 'R_hip_angle', type: 'angle', userError: 0.068, generalError: 0.041, level: '정상' },
+  { index: 6, name: 'L_knee_angle', type: 'angle', userError: 0.043, generalError: 0.035, level: '정상' },
+  { index: 7, name: 'R_knee_angle', type: 'angle', userError: 0.076, generalError: 0.048, level: '양호' },
+  { index: 8, name: 'knee_ext_vel', type: 'velocity', userError: 0.092, generalError: 0.061, level: '양호' },
+  { index: 9, name: 'pelvis_rot_vel', type: 'velocity', userError: 0.058, generalError: 0.042, level: '정상' },
+  { index: 10, name: 'trunk_rot_vel', type: 'velocity', userError: 0.112, generalError: 0.073, level: '주의' },
+  { index: 11, name: 'elbow_ext_vel', type: 'velocity', userError: 0.067, generalError: 0.044, level: '정상' },
+  { index: 12, name: 'shoulder_ir_vel', type: 'velocity', userError: 0.188, generalError: 0.095, level: '위험' },
+];
 
 const DUMMY_ANALYSES: AnalysisListItem[] = [
   {
@@ -53,6 +69,7 @@ export default function HistoryPage() {
   const downloadMutation = useDownloadPdf();
 
   const mockJointMetrics = {
+    features: DUMMY_FEATURES,
     shoulderStress: 25,
     elbowLoad: 30,
     wristLoad: 20,
@@ -363,7 +380,7 @@ export default function HistoryPage() {
                           {/* Radar Chart */}
                           <div className="bg-navy-800 border border-slate-700 rounded-lg p-6">
                             <h3 className="font-semibold mb-4">관절별 위험도 분석</h3>
-                            <RadarChart jointMetrics={mockJointMetrics} />
+                            <RadarChart features={DUMMY_FEATURES} />
                           </div>
 
                           {/* Critical Zone + Recommendations */}

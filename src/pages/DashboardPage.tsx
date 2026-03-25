@@ -5,8 +5,25 @@ import RadarChart from '../components/dashboard/RadarChart';
 import StatusBadge from '../components/ui/StatusBadge';
 import GaugeBar from '../components/ui/GaugeBar';
 import { useAnalysisList } from '../hooks/useAnalysis';
-import type { AnalysisListItem } from '../types/analysis.types';
+import type { AnalysisListItem, FeatureDetail } from '../types/analysis.types';
 import { format } from 'date-fns';
+
+// 더미 13개 특징 데이터 (API 연동 전 테스트용)
+const DUMMY_FEATURES: FeatureDetail[] = [
+  { index: 0, name: 'L_elbow_angle', type: 'angle', userError: 0.084, generalError: 0.046, level: '양호' },
+  { index: 1, name: 'R_elbow_angle', type: 'angle', userError: 0.052, generalError: 0.038, level: '정상' },
+  { index: 2, name: 'L_shoulder_angle', type: 'angle', userError: 0.121, generalError: 0.067, level: '주의' },
+  { index: 3, name: 'R_shoulder_angle', type: 'angle', userError: 0.095, generalError: 0.055, level: '양호' },
+  { index: 4, name: 'L_hip_angle', type: 'angle', userError: 0.145, generalError: 0.082, level: '주의' },
+  { index: 5, name: 'R_hip_angle', type: 'angle', userError: 0.068, generalError: 0.041, level: '정상' },
+  { index: 6, name: 'L_knee_angle', type: 'angle', userError: 0.043, generalError: 0.035, level: '정상' },
+  { index: 7, name: 'R_knee_angle', type: 'angle', userError: 0.076, generalError: 0.048, level: '양호' },
+  { index: 8, name: 'knee_ext_vel', type: 'velocity', userError: 0.092, generalError: 0.061, level: '양호' },
+  { index: 9, name: 'pelvis_rot_vel', type: 'velocity', userError: 0.058, generalError: 0.042, level: '정상' },
+  { index: 10, name: 'trunk_rot_vel', type: 'velocity', userError: 0.112, generalError: 0.073, level: '주의' },
+  { index: 11, name: 'elbow_ext_vel', type: 'velocity', userError: 0.067, generalError: 0.044, level: '정상' },
+  { index: 12, name: 'shoulder_ir_vel', type: 'velocity', userError: 0.188, generalError: 0.095, level: '위험' },
+];
 
 export default function DashboardPage() {
   const { data, isLoading, error } = useAnalysisList(0, 1);
@@ -18,14 +35,8 @@ export default function DashboardPage() {
     }
   }, [data]);
 
-  const mockJointMetrics = {
-    shoulderStress: 25,
-    elbowLoad: 30,
-    wristLoad: 20,
-    spineAngle: 35,
-    kneeStability: 28,
-    hipRotation: 32,
-  };
+  // 실제 API 데이터가 있으면 사용, 없으면 더미
+  const features: FeatureDetail[] = DUMMY_FEATURES;
 
   if (isLoading) {
     return (
@@ -62,6 +73,9 @@ export default function DashboardPage() {
       : '2025년 12월 19일 오전 10:30';
 
   const displayOverall = latestAnalysis?.overallRiskScore ?? dummyOverall;
+
+  // 13개 특징 중 위험/주의 항목 추출
+  const criticalFeatures = features.filter(f => f.level === '위험' || f.level === '주의');
 
   return (
     <div className="min-h-screen bg-navy-900 text-slate-100">
@@ -137,7 +151,7 @@ export default function DashboardPage() {
               <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
-              <span className="text-sm text-slate-300">의학적 위험</span>
+              <span className="text-sm text-slate-300">의학적 안전</span>
             </div>
             <div className="text-4xl font-bold mb-3">
               {dummyMedical}
@@ -147,10 +161,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Radar Chart */}
+        {/* Radar Chart - 13개 특징 */}
         <div className="bg-navy-800 border border-slate-700 rounded-lg p-6 mb-6">
-          <h3 className="font-semibold mb-4">관절별 위험도 분석</h3>
-          <RadarChart jointMetrics={mockJointMetrics} />
+          <h3 className="font-semibold mb-1">13개 생체역학 특징 분석</h3>
+          <p className="text-xs text-slate-500 mb-4">관절 각도 8개 + 각속도 5개</p>
+          <RadarChart features={features} />
         </div>
 
         {/* Critical Zone + Recommendations */}
@@ -160,9 +175,22 @@ export default function DashboardPage() {
               <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
-              <h3 className="font-semibold">Critical Zone</h3>
+              <h3 className="font-semibold">주의 필요 항목</h3>
             </div>
-            <p className="text-sm text-slate-400">위험 구간이 발견되지 않았습니다.</p>
+            {criticalFeatures.length > 0 ? (
+              <ul className="space-y-2">
+                {criticalFeatures.map((f) => (
+                  <li key={f.index} className="flex items-center justify-between text-sm">
+                    <span className="text-slate-300">{f.name}</span>
+                    <span className={f.level === '위험' ? 'text-red-400 font-medium' : 'text-amber-400 font-medium'}>
+                      {f.level} (오차: {(f.userError * 100).toFixed(1)}%)
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-slate-400">위험 구간이 발견되지 않았습니다.</p>
+            )}
           </div>
 
           <div className="bg-navy-800 border border-slate-700 rounded-lg p-6">
@@ -180,37 +208,51 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Detailed Metrics */}
+        {/* 13개 세부 지표 테이블 */}
         <div className="bg-navy-800 border border-slate-700 rounded-lg p-6">
-          <h3 className="font-semibold mb-4">세부 지표</h3>
-          <div className="grid grid-cols-3 gap-6">
-            {[
-              { name: '어깨 스트레스', value: 25, color: 'bg-status-good' },
-              { name: '팔꿈치 부담', value: 30, color: 'bg-cyan-500' },
-              { name: '손목 부하', value: 20, color: 'bg-status-good' },
-              { name: '척추 각도', value: 35, color: 'bg-cyan-500' },
-              { name: '무릎 안정성', value: 28, color: 'bg-status-good' },
-              { name: '고관절 회전', value: 32, color: 'bg-cyan-500' },
-            ].map((metric) => (
-              <div key={metric.name}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-slate-300">{metric.name}</span>
-                  <span className="text-2xl font-bold">{metric.value}</span>
-                </div>
-                <div className="relative">
-                  <div className="mb-1">
-                    <GaugeBar value={metric.value} colorClassName="from-sky-400 to-cyan-500" />
-                  </div>
-                  <div className="flex justify-between text-[10px] text-slate-500">
-                    <span>0</span>
-                    <span>25</span>
-                    <span>50</span>
-                    <span>75</span>
-                    <span>100</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <h3 className="font-semibold mb-4">세부 지표 (13개 전체)</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-slate-400 border-b border-slate-700">
+                  <th className="text-left py-2 px-3">#</th>
+                  <th className="text-left py-2 px-3">특징</th>
+                  <th className="text-left py-2 px-3">유형</th>
+                  <th className="text-right py-2 px-3">사용자 오차</th>
+                  <th className="text-right py-2 px-3">일반 오차</th>
+                  <th className="text-center py-2 px-3">상태</th>
+                </tr>
+              </thead>
+              <tbody>
+                {features.map((f) => (
+                  <tr key={f.index} className="border-b border-slate-700/50 hover:bg-navy-900/30">
+                    <td className="py-2 px-3 text-slate-500">{f.index}</td>
+                    <td className="py-2 px-3 text-slate-200">{f.name}</td>
+                    <td className="py-2 px-3">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        f.type === 'angle'
+                          ? 'bg-blue-500/10 text-blue-400'
+                          : 'bg-purple-500/10 text-purple-400'
+                      }`}>
+                        {f.type === 'angle' ? '각도' : '속도'}
+                      </span>
+                    </td>
+                    <td className="py-2 px-3 text-right text-slate-300">{(f.userError * 100).toFixed(1)}%</td>
+                    <td className="py-2 px-3 text-right text-slate-300">{(f.generalError * 100).toFixed(1)}%</td>
+                    <td className="py-2 px-3 text-center">
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                        f.level === '정상' ? 'bg-emerald-500/10 text-emerald-400' :
+                        f.level === '양호' ? 'bg-cyan-500/10 text-cyan-400' :
+                        f.level === '주의' ? 'bg-amber-500/10 text-amber-400' :
+                        'bg-red-500/10 text-red-400'
+                      }`}>
+                        {f.level}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </main>

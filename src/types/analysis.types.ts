@@ -31,18 +31,21 @@ export interface AnalysisResult {
   recommendations: string[];
   criticalZoneDetected: boolean;
   criticalZoneDescription: string | null;
-  jointMetrics: JointMetrics;
+  features: FeatureDetail[];
 }
 
-export interface JointMetrics {
-  shoulderStress: number;
-  elbowLoad: number;
-  wristLoad: number;
-  spineAngle: number;
-  kneeStability: number;
-  hipRotation: number;
-  radarData: string;
-  temporalErrorData: string;
+// 13개 생체역학 특징 (angle 8개 + velocity 5개)
+export interface FeatureDetail {
+  index: number;
+  name: string;
+  type: 'angle' | 'velocity';
+  userError: number;
+  generalError: number;
+  level: '정상' | '양호' | '주의' | '위험';
+  // velocity 타입 전용
+  peakValue?: number;
+  dangerRatio?: number;
+  medicalScore?: number;
 }
 
 export interface AnalysisStatus {

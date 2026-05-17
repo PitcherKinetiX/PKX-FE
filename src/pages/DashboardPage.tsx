@@ -33,12 +33,28 @@ export default function DashboardPage() {
 
   const handleDownloadPdf = () => {
     if (!reportRef.current) return;
+    const originalElements = reportRef.current.querySelectorAll('*');
     html2pdf()
       .set({
         margin: 8,
         filename: `PKX_report_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          onclone: (_clonedDoc: Document, clonedElement: HTMLElement) => {
+            const clonedElements = clonedElement.querySelectorAll('*');
+            originalElements.forEach((orig, i) => {
+              const computed = window.getComputedStyle(orig);
+              const cloned = clonedElements[i] as HTMLElement;
+              if (cloned) {
+                cloned.style.color = computed.color;
+                cloned.style.backgroundColor = computed.backgroundColor;
+                cloned.style.borderColor = computed.borderColor;
+              }
+            });
+          },
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       })
       .from(reportRef.current)

@@ -71,3 +71,6 @@ export default defineConfig([
   },
 ])
 ```
+
+
+'npm install html2pdf.js', 'npm install --save-dev @types/html2pdf.js' required for PDF download

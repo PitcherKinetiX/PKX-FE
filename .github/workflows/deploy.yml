@@ -1,0 +1,20 @@
+name: Deploy to GCP VM
+
+on:
+  push:
+    branches:
+      - main  # main 브랜치에 push될 때 이 스크립트가 실행됩니다.
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH into GCP VM and Run deploy.sh
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.GCP_HOST }}
+          username: ${{ secrets.GCP_USERNAME }}
+          key: ${{ secrets.GCP_SSH_KEY }}
+          script: |
+            cd ~/PKX-FE
+            ./deploy.sh

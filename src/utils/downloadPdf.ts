@@ -10,28 +10,28 @@ function resolveColor(color: string): string {
   return a === 0 ? 'transparent' : `rgb(${r}, ${g}, ${b})`;
 }
 
-function replaceOklch(css: string): string {
-  return css.replace(/oklch\([^)]+\)/g, match => resolveColor(match));
+function sanitizeModernColors(css: string): string {
+  return css
+    .replace(/@supports\s*\([^{}]*color-mix[^{}]*\)\s*\{(?:[^{}]|\{[^{}]*\})*\}/g, '')
+    .replace(/\s+in\s+oklab/g, '')
+    .replace(/(?:oklch|oklab)\([^)]+\)/g, match => resolveColor(match));
 }
 
-async function fixOklchColors(doc: Document): Promise<void> {
-  // 인라인 <style> 태그 처리
+async function fixModernColors(doc: Document): Promise<void> {
   doc.querySelectorAll('style').forEach(styleEl => {
-    if (styleEl.textContent) styleEl.textContent = replaceOklch(styleEl.textContent);
+    if (styleEl.textContent) styleEl.textContent = sanitizeModernColors(styleEl.textContent);
   });
 
-  // 외부 <link rel="stylesheet"> 파일을 fetch해서 인라인으로 교체
   const linkEls = Array.from(doc.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'));
   await Promise.all(linkEls.map(async link => {
     try {
       const res = await fetch(link.href);
-      const css = replaceOklch(await res.text());
+      const css = sanitizeModernColors(await res.text());
       const style = doc.createElement('style');
       style.textContent = css;
       link.parentNode?.insertBefore(style, link);
       link.remove();
     } catch {
-      // 개별 파일 실패해도 전체는 진행
     }
   }));
 }
@@ -47,7 +47,7 @@ export function downloadPdf(elementId: string, filename: string = 'report.pdf') 
     html2canvas: {
       scale: 2,
       useCORS: true,
-      onclone: (clonedDoc: Document) => fixOklchColors(clonedDoc),
+      onclone: (clonedDoc: Document) => fixModernColors(clonedDoc),
     },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
   });

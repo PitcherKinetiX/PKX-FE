@@ -12,10 +12,21 @@ interface AuthState {
   updateUser: (partial: Partial<UserInfo>) => void;
 }
 
+const getInitialAuthState = (): Pick<AuthState, 'user' | 'accessToken' | 'isAuthenticated'> => {
+  const accessToken = localStorage.getItem('accessToken');
+  const userStr = localStorage.getItem('user');
+  if (accessToken && userStr) {
+    try {
+      return { user: JSON.parse(userStr), accessToken, isAuthenticated: true };
+    } catch {
+      // corrupted storage
+    }
+  }
+  return { user: null, accessToken: null, isAuthenticated: false };
+};
+
 export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  accessToken: null,
-  isAuthenticated: false,
+  ...getInitialAuthState(),
 
   setAuth: (user, accessToken, refreshToken) => {
     localStorage.setItem('accessToken', accessToken);

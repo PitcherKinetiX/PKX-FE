@@ -1,6 +1,4 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { useEffect } from 'react';
-import { useAuthStore } from './store/authStore';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -13,12 +11,6 @@ import ProfilePage from './pages/ProfilePage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 function App() {
-  const initAuth = useAuthStore((state) => state.initAuth);
-
-  useEffect(() => {
-    initAuth();
-  }, [initAuth]);
-
   return (
     <BrowserRouter>
       <Routes>

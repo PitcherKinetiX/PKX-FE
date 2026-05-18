@@ -36,19 +36,61 @@ async function fixModernColors(doc: Document): Promise<void> {
   }));
 }
 
-export function downloadPdf(elementId: string, filename: string = 'report.pdf') {
+async function installPdfSafeStyles(): Promise<() => void> {
+  const restoreCallbacks: Array<() => void> = [];
+
+  document.querySelectorAll('style').forEach(styleEl => {
+    if (!styleEl.textContent) return;
+
+    const originalCss = styleEl.textContent;
+    styleEl.textContent = sanitizeModernColors(originalCss);
+    restoreCallbacks.push(() => {
+      styleEl.textContent = originalCss;
+    });
+  });
+
+  const linkEls = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'));
+  await Promise.all(linkEls.map(async link => {
+    try {
+      const res = await fetch(link.href);
+      const style = document.createElement('style');
+      style.textContent = sanitizeModernColors(await res.text());
+      link.parentNode?.insertBefore(style, link);
+
+      const wasDisabled = link.disabled;
+      link.disabled = true;
+      restoreCallbacks.push(() => {
+        style.remove();
+        link.disabled = wasDisabled;
+      });
+    } catch {
+      // Keep the original stylesheet if it cannot be fetched.
+    }
+  }));
+
+  return () => {
+    restoreCallbacks.reverse().forEach(restore => restore());
+  };
+}
+
+export async function downloadPdf(elementId: string, filename: string = 'report.pdf') {
   const element = document.getElementById(elementId);
   if (!element) return;
 
-  html2pdf(element, {
-    margin: [10, 10, 10, 10],
-    filename,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      onclone: (clonedDoc: Document) => fixModernColors(clonedDoc),
-    },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-  });
+  const restoreStyles = await installPdfSafeStyles();
+  try {
+    await html2pdf(element, {
+      margin: [10, 10, 10, 10],
+      filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        onclone: (clonedDoc: Document) => fixModernColors(clonedDoc),
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    });
+  } finally {
+    restoreStyles();
+  }
 }

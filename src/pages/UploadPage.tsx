@@ -44,8 +44,8 @@ export default function UploadPage() {
     if (!selectedFile) return;
 
     uploadMutation.mutate(selectedFile, {
-      onSuccess: () => {
-        navigate('/history');
+      onSuccess: (data) => {
+        navigate(`/analysis/${data.analysisId}/processing`);
       },
       onError: () => {
         alert('Failed to upload video. Please try again.');

@@ -23,7 +23,7 @@ export const useAnalysisStatus = (analysisId: number | null, enabled = true) => 
     enabled: !!analysisId && enabled,
     refetchInterval: (query) => {
       const status = query.state.data?.status;
-      return status === 'PENDING' || status === 'PROCESSING' ? 3000 : false;
+      return status === 'UPLOADING' || status === 'PENDING' || status === 'PROCESSING' ? 3000 : false;
     },
   });
 };

@@ -8,6 +8,7 @@ import HistoryPage from './pages/HistoryPage';
 import ComparisonPage from './pages/ComparisonPage';
 import AiModelPage from './pages/AiModelPage';
 import ProfilePage from './pages/ProfilePage';
+import AnalysisProcessingPage from './pages/AnalysisProcessingPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/upload" element={<UploadPage />} />
+          <Route path="/analysis/:id/processing" element={<AnalysisProcessingPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/comparison" element={<ComparisonPage />} />
           <Route path="/ai-model" element={<AiModelPage />} />

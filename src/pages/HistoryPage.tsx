@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import Header from '../components/layout/Header';
 import StatusBadge from '../components/ui/StatusBadge';
-import RadarChart from '../components/dashboard/RadarChart';
-import GaugeBar from '../components/ui/GaugeBar';
+import AnalysisReport from '../components/dashboard/AnalysisReport';
 import { useAnalysisList, useAnalysisDetail, useDeleteAnalysis, useDownloadPdf } from '../hooks/useAnalysis';
 import type { AnalysisListItem } from '../types/analysis.types';
 
@@ -27,104 +26,9 @@ function ExpandedDetail({ analysisId }: { analysisId: number }) {
     );
   }
 
-  const result = detail.result;
-
   return (
-    <div className="border-t border-slate-700 bg-navy-900/50 p-6 space-y-6">
-      {/* Risk Summary */}
-      <div className="bg-navy-800 border border-slate-700 rounded-lg px-6 py-5 flex items-start justify-between gap-6">
-        <div className="flex-1">
-          <h2 className="font-semibold mb-2">위험도 등급</h2>
-          <p className="text-sm text-slate-400 leading-relaxed">{result.riskSummary}</p>
-        </div>
-        <StatusBadge status={result.riskGrade as 'GOOD' | 'NORMAL' | 'CAUTION' | 'DANGER'} />
-      </div>
-
-      {/* Three Metrics Cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-navy-800 border border-slate-700 rounded-lg p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span className="text-xs text-slate-300">전체 위험도</span>
-          </div>
-          <div className="text-3xl font-bold mb-2">
-            {result.overallRiskScore}
-            <span className="text-base text-slate-400"> / 100</span>
-          </div>
-          <GaugeBar value={result.overallRiskScore} colorClassName="from-emerald-400 to-emerald-500" />
-        </div>
-
-        <div className="bg-navy-800 border border-slate-700 rounded-lg p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <svg className="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-            <span className="text-xs text-slate-300">투구 일관성</span>
-          </div>
-          <div className="text-3xl font-bold mb-2">
-            {result.consistencyScore}
-            <span className="text-base text-slate-400"> / 100</span>
-          </div>
-          <GaugeBar value={result.consistencyScore} colorClassName="from-sky-400 to-cyan-500" />
-        </div>
-
-        <div className="bg-navy-800 border border-slate-700 rounded-lg p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-            <span className="text-xs text-slate-300">의학적 위험</span>
-          </div>
-          <div className="text-3xl font-bold mb-2">
-            {result.medicalRiskScore}
-            <span className="text-base text-slate-400"> / 100</span>
-          </div>
-          <GaugeBar value={result.medicalRiskScore} colorClassName="from-emerald-400 to-lime-400" />
-        </div>
-      </div>
-
-      {/* Radar Chart */}
-      <div className="bg-navy-800 border border-slate-700 rounded-lg p-6">
-        <h3 className="font-semibold mb-4">관절별 위험도 분석</h3>
-        <RadarChart features={result.features} />
-      </div>
-
-      {/* Critical Zone + Recommendations */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-navy-800 border border-slate-700 rounded-lg p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <h3 className="font-semibold text-sm">Critical Zone</h3>
-          </div>
-          <p className="text-sm text-slate-400">
-            {result.criticalZoneDetected
-              ? (result.criticalZoneDescription ?? '위험 구간이 감지되었습니다.')
-              : '위험 구간이 발견되지 않았습니다.'}
-          </p>
-        </div>
-
-        <div className="bg-navy-800 border border-slate-700 rounded-lg p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <svg className="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-            <h3 className="font-semibold text-sm">권장 사항</h3>
-          </div>
-          {result.recommendations.length > 0 ? (
-            <ul className="space-y-1 text-sm text-slate-400">
-              {result.recommendations.map((rec, i) => (
-                <li key={i}>• {rec}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-slate-400">권장 사항이 없습니다.</p>
-          )}
-        </div>
-      </div>
+    <div className="border-t border-slate-700 bg-navy-900/50 p-6">
+      <AnalysisReport result={detail.result} />
     </div>
   );
 }

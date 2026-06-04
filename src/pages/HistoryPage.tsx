@@ -339,7 +339,7 @@ export default function HistoryPage() {
                           </div>
                         </div>
 
-                        {analysis.overallRiskScore !== undefined && (
+                        {analysis.overallRiskScore != null && (
                           <div className="mb-4">
                             <p className="text-xs text-slate-400 mb-1">전체 위험도</p>
                             <p className="text-2xl font-bold">{analysis.overallRiskScore.toFixed(0)}</p>

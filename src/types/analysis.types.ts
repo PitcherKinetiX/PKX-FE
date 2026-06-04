@@ -5,8 +5,8 @@ export interface AnalysisListItem {
   status: string;
   createdAt: string;
   completedAt: string | null;
-  riskGrade?: string;
-  overallRiskScore?: number;
+  riskGrade?: string | null;
+  overallRiskScore?: number | null;
 }
 
 export interface AnalysisDetail {

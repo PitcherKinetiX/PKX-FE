@@ -9,11 +9,14 @@ export default function ProfilePage() {
   const { user, logout, updateUser } = useAuthStore();
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -51,6 +54,22 @@ export default function ProfilePage() {
     setNewPassword('');
     setConfirmPassword('');
     setShowChangePassword(false);
+  };
+
+  const handleDeleteAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDeleting(true);
+    try {
+      await userApi.deleteAccount(deletePassword);
+      alert('회원 탈퇴가 완료되었습니다.');
+      logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Failed to delete account', error);
+      alert('회원 탈퇴에 실패했습니다. 비밀번호를 확인하고 다시 시도해주세요.');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -128,6 +147,20 @@ export default function ProfilePage() {
           </svg>
           로그아웃
         </button>
+
+        {/* Danger Zone */}
+        <div className="bg-navy-800 border border-red-900/40 rounded-lg p-6 mb-6">
+          <h3 className="font-semibold mb-1 text-red-400">회원 탈퇴</h3>
+          <p className="text-sm text-slate-400 mb-4">
+            탈퇴 시 계정과 모든 분석 기록·영상이 영구 삭제되며 복구할 수 없습니다.
+          </p>
+          <button
+            onClick={() => setShowDeleteAccount(true)}
+            className="px-4 py-2.5 bg-red-900/30 hover:bg-red-900/50 border border-red-800/50 text-red-400 rounded-lg transition-colors text-sm font-medium"
+          >
+            회원 탈퇴
+          </button>
+        </div>
 
         {/* App Information */}
         <div className="bg-navy-800 border border-slate-700 rounded-lg p-6">
@@ -269,6 +302,60 @@ export default function ProfilePage() {
                   className="flex-1 px-4 py-3 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg transition-colors font-medium"
                 >
                   변경
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Modal */}
+      {showDeleteAccount && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-navy-800 border border-red-900/50 rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xl font-bold text-red-400">회원 탈퇴</h2>
+              <button
+                onClick={() => { setShowDeleteAccount(false); setDeletePassword(''); }}
+                className="text-slate-400 hover:text-slate-200 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <p className="text-sm text-slate-400 mb-6">
+              정말 탈퇴하시겠습니까? 계정과 모든 분석 기록·영상이 <span className="text-red-400 font-medium">영구 삭제</span>되며 복구할 수 없습니다.
+              계속하려면 비밀번호를 입력하세요.
+            </p>
+
+            <form onSubmit={handleDeleteAccount} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">비밀번호</label>
+                <input
+                  type="password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  className="w-full px-4 py-3 bg-navy-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  placeholder="현재 비밀번호"
+                  required
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => { setShowDeleteAccount(false); setDeletePassword(''); }}
+                  className="flex-1 px-4 py-3 bg-navy-700 hover:bg-navy-600 border border-slate-700 rounded-lg transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  disabled={deleting}
+                  className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
+                >
+                  {deleting ? '처리 중...' : '탈퇴하기'}
                 </button>
               </div>
             </form>

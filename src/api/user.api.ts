@@ -11,5 +11,9 @@ export const userApi = {
     const response = await apiClient.put<{ data: UserProfile }>('/users/me', payload);
     return response.data.data;
   },
+
+  deleteAccount: async (password: string) => {
+    await apiClient.delete('/users/me', { data: { password } });
+  },
 };
 

@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { AnalysisDetail, AnalysisListItem, AnalysisStatus } from '../types/analysis.types';
+import type { AnalysisDetail, AnalysisListItem, AnalysisStatus, PageResponse } from '../types/analysis.types';
 
 export const analysisApi = {
   upload: async (file: File) => {
@@ -26,7 +26,7 @@ export const analysisApi = {
   },
 
   getList: async (page = 0, size = 10) => {
-    const response = await apiClient.get<{ data: { items: AnalysisListItem[] } }>('/analyses', {
+    const response = await apiClient.get<{ data: PageResponse<AnalysisListItem> }>('/analyses', {
       params: { page, size, sort: 'createdAt,desc' },
     });
     return response.data.data;

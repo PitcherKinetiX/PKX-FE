@@ -11,11 +11,17 @@ export const aiModelApi = {
   },
 
   /**
-   * Train user-specific AI model
+   * Train user-specific AI model by uploading training videos (min 10).
    */
-  train: async (analysisIds: number[]): Promise<TrainResponse> => {
-    const response = await apiClient.post<{ data: TrainResponse }>('/ai-models/train', {
-      analysisIds,
+  train: async (files: File[]): Promise<TrainResponse> => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append('files', file));
+
+    const response = await apiClient.post<{ data: TrainResponse }>('/ai-models/train', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 600000, // 영상 다수 업로드 — 넉넉한 타임아웃
     });
     return response.data.data;
   },

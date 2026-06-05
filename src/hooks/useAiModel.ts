@@ -22,7 +22,7 @@ export const useTrainModel = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (analysisIds: number[]) => aiModelApi.train(analysisIds),
+    mutationFn: (files: File[]) => aiModelApi.train(files),
     onSuccess: () => {
       // Invalidate and refetch model status
       queryClient.invalidateQueries({ queryKey: ['aiModelStatus'] });

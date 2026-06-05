@@ -1,53 +1,79 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useCallback } from 'react';
 import Header from '../components/layout/Header';
-import StatusBadge from '../components/ui/StatusBadge';
 import { useModelStatus, useTrainModel } from '../hooks/useAiModel';
-import { analysisApi } from '../api/analysis.api';
+
+const MIN_TRAIN_VIDEOS = 10;
+const MAX_TRAIN_VIDEOS = 50;
 
 export default function AiModelPage() {
-  const [selectedData, setSelectedData] = useState<number[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+  const [dragActive, setDragActive] = useState(false);
 
-  // Fetch AI model status
   const { data: modelStatus, isLoading: isLoadingStatus } = useModelStatus();
-
-  // Fetch completed analyses for training data selection
-  const { data: analysesData, isLoading: isLoadingAnalyses } = useQuery({
-    queryKey: ['analyses', 'completed'],
-    queryFn: () => analysisApi.getList(0, 100), // Get up to 100 completed analyses
-  });
-
-  // Train model mutation
   const trainMutation = useTrainModel();
 
-  const isLoading = isLoadingStatus || isLoadingAnalyses;
   const isTraining = modelStatus?.trainingStatus === 'TRAINING';
-  const canTrain = modelStatus?.canTrain ?? false;
+  const enoughVideos = files.length >= MIN_TRAIN_VIDEOS;
+  const canStart = enoughVideos && !isTraining && !trainMutation.isPending;
 
-  // Filter only completed analyses with results
-  const completedAnalyses = analysesData?.items.filter(
-    (analysis) => analysis.status === 'COMPLETED' && analysis.overallRiskScore !== undefined
-  ) ?? [];
+  const addFiles = useCallback((incoming: FileList | File[]) => {
+    const videos = Array.from(incoming).filter((f) => f.type.startsWith('video/'));
+    if (videos.length === 0) {
+      alert('영상 파일만 업로드할 수 있습니다.');
+      return;
+    }
+    setFiles((prev) => {
+      const merged = [...prev, ...videos];
+      if (merged.length > MAX_TRAIN_VIDEOS) {
+        alert(`최대 ${MAX_TRAIN_VIDEOS}개까지 업로드할 수 있습니다.`);
+      }
+      return merged.slice(0, MAX_TRAIN_VIDEOS);
+    });
+  }, []);
 
-  const toggleAll = () => {
-    setSelectedData(
-      selectedData.length === completedAnalyses.length ? [] : completedAnalyses.map((d) => d.analysisId)
-    );
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
+    else if (e.type === 'dragleave') setDragActive(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
+      if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files);
+    },
+    [addFiles]
+  );
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.length) addFiles(e.target.files);
+    e.target.value = '';
   };
 
-  const toggleItem = (id: number) => {
-    setSelectedData((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   };
 
   const handleStartTraining = () => {
-    if (selectedData.length === 0 || !canTrain) return;
-    trainMutation.mutate(selectedData);
+    if (!canStart) return;
+    trainMutation.mutate(files, {
+      onSuccess: () => setFiles([]),
+      onError: () => alert('학습 시작에 실패했습니다. 잠시 후 다시 시도해주세요.'),
+    });
   };
 
-  // Loading state
-  if (isLoading) {
+  if (isLoadingStatus) {
     return (
       <div className="min-h-screen bg-navy-900 text-slate-100">
         <Header />
@@ -69,9 +95,7 @@ export default function AiModelPage() {
         <Header />
         <main className="max-w-6xl mx-auto px-6 py-8">
           <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <p className="text-red-400 mb-4">AI 모델 정보를 불러오는데 실패했습니다.</p>
-            </div>
+            <p className="text-red-400">AI 모델 정보를 불러오는데 실패했습니다.</p>
           </div>
         </main>
       </div>
@@ -85,7 +109,7 @@ export default function AiModelPage() {
         {/* Title */}
         <h1 className="text-2xl font-bold mb-2">개인화 AI 모델</h1>
         <p className="text-slate-400 text-sm mb-8">
-          당신만의 투구 데이터로 학습한 맞춤형 AI 모델입니다
+          본인의 투구 영상으로 학습한 맞춤형 AI 모델입니다. 영상을 {MIN_TRAIN_VIDEOS}개 이상 업로드해 모델을 학습하세요.
         </p>
 
         {/* AI Model Status Card */}
@@ -141,9 +165,11 @@ export default function AiModelPage() {
             </div>
           )}
 
-          {!canTrain && modelStatus.cannotTrainReason && (
-            <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <p className="text-sm text-yellow-500">{modelStatus.cannotTrainReason}</p>
+          {modelStatus.trainingStatus === 'FAILED' && (
+            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <p className="text-sm text-red-400">
+                이전 학습이 실패했습니다. 영상을 다시 업로드해 학습을 재시도해주세요.
+              </p>
             </div>
           )}
         </div>
@@ -163,18 +189,13 @@ export default function AiModelPage() {
               <span className="text-sm text-slate-300">학습 데이터</span>
             </div>
             <div className="text-3xl font-bold mb-1">{modelStatus.trainingSampleCount}</div>
-            <div className="text-xs text-slate-400">개의 분석 데이터</div>
+            <div className="text-xs text-slate-400">개의 학습 영상</div>
           </div>
 
           <div className="bg-navy-800 border border-slate-700 rounded-lg p-6">
             <div className="flex items-center gap-2 mb-3">
               <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               <span className="text-sm text-slate-300">모델 정확도</span>
             </div>
@@ -194,21 +215,13 @@ export default function AiModelPage() {
           <div className="bg-navy-800 border border-slate-700 rounded-lg p-6">
             <div className="flex items-center gap-2 mb-3">
               <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
               <span className="text-sm text-slate-300">마지막 학습</span>
             </div>
             <div className="text-lg font-bold mb-1">
               {modelStatus.lastTrainedAt ? (
-                new Date(modelStatus.lastTrainedAt).toLocaleDateString('ko-KR', {
-                  month: 'short',
-                  day: 'numeric',
-                })
+                new Date(modelStatus.lastTrainedAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
               ) : (
                 <span className="text-slate-500">미학습</span>
               )}
@@ -217,149 +230,105 @@ export default function AiModelPage() {
           </div>
         </div>
 
-        {/* Training Data Selection */}
+        {/* Training Video Upload */}
         <div className="bg-navy-800 border border-slate-700 rounded-lg p-6 mb-8">
-          <h2 className="text-lg font-semibold mb-2">학습 데이터 선택</h2>
+          <h2 className="text-lg font-semibold mb-2">학습 영상 업로드</h2>
           <p className="text-sm text-slate-400 mb-6">
-            모델 학습에 사용할 투구 영상 데이터를 선택하세요 ({selectedData.length}/{completedAnalyses.length}개 선택)
+            모델 학습에 사용할 투구 영상을 업로드하세요. 최소 {MIN_TRAIN_VIDEOS}개 이상 필요합니다. ({files.length}개 선택됨)
           </p>
 
-          <div className="flex justify-between items-center mb-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedData.length === completedAnalyses.length && completedAnalyses.length > 0}
-                onChange={toggleAll}
-                className="w-4 h-4 rounded border-slate-600 bg-navy-700"
-              />
-              <span className="text-sm text-slate-300">
-                {selectedData.length === completedAnalyses.length ? '전체 해제' : '전체 선택'}
+          {/* Drop zone */}
+          <div
+            className={`border-2 border-dashed rounded-lg p-10 text-center transition-colors ${
+              dragActive ? 'border-cyan-500 bg-cyan-500/10' : 'border-slate-700 hover:border-slate-600'
+            }`}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+          >
+            <div className="mx-auto w-16 h-16 bg-navy-700 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                />
+              </svg>
+            </div>
+            <p className="text-sm text-slate-400 mb-3">드래그해서 여러 영상을 한 번에 올리거나</p>
+            <label className="inline-block">
+              <span className="px-6 py-3 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 cursor-pointer transition-colors font-medium">
+                파일 선택
               </span>
+              <input type="file" className="hidden" accept="video/*" multiple onChange={handleFileChange} />
             </label>
+            <p className="mt-4 text-xs text-slate-500">(MP4, MOV 등 · 파일당 최대 500MB · 최소 {MIN_TRAIN_VIDEOS}개)</p>
+          </div>
+
+          {/* Selected files */}
+          {files.length > 0 && (
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-slate-300">
+                  선택된 영상 {files.length}개
+                  {!enoughVideos && (
+                    <span className="text-yellow-500 ml-2">
+                      ({MIN_TRAIN_VIDEOS - files.length}개 더 필요)
+                    </span>
+                  )}
+                </span>
+                {!trainMutation.isPending && (
+                  <button onClick={() => setFiles([])} className="text-xs text-red-400 hover:text-red-300 transition-colors">
+                    전체 제거
+                  </button>
+                )}
+              </div>
+              <ul className="space-y-2 max-h-72 overflow-y-auto">
+                {files.map((file, index) => (
+                  <li
+                    key={`${file.name}-${index}`}
+                    className="flex items-center justify-between bg-navy-700 border border-slate-700 rounded-lg px-4 py-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-white truncate">{file.name}</p>
+                      <p className="text-xs text-slate-400">{formatFileSize(file.size)}</p>
+                    </div>
+                    {!trainMutation.isPending && (
+                      <button
+                        onClick={() => removeFile(index)}
+                        className="text-slate-500 hover:text-red-400 transition-colors shrink-0 ml-3"
+                        title="제거"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="mt-6 flex justify-end">
             <button
               onClick={handleStartTraining}
-              disabled={isTraining || selectedData.length === 0 || !canTrain || trainMutation.isPending}
+              disabled={!canStart}
               className={`px-6 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${
-                isTraining || selectedData.length === 0 || !canTrain || trainMutation.isPending
-                  ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                  : 'bg-cyan-500 hover:bg-cyan-600 text-white'
+                canStart ? 'bg-cyan-500 hover:bg-cyan-600 text-white' : 'bg-slate-700 text-slate-400 cursor-not-allowed'
               }`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              {trainMutation.isPending ? '학습 시작 중...' : isTraining ? '학습 진행 중...' : '모델 학습 시작'}
+              {trainMutation.isPending
+                ? '업로드 & 학습 시작 중...'
+                : isTraining
+                ? '학습 진행 중...'
+                : '모델 학습 시작'}
             </button>
-          </div>
-
-          {completedAnalyses.length === 0 ? (
-            <div className="text-center py-12 text-slate-400">
-              <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              <p>완료된 분석 데이터가 없습니다.</p>
-              <p className="text-sm mt-2">먼저 영상을 업로드하고 분석을 완료해주세요.</p>
-            </div>
-          ) : (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {completedAnalyses.map((data) => (
-                <label
-                  key={data.analysisId}
-                  className={`block p-4 rounded-lg border cursor-pointer transition-colors ${
-                    selectedData.includes(data.analysisId)
-                      ? 'border-cyan-500 bg-cyan-500/5'
-                      : 'border-slate-700 bg-navy-700 hover:border-slate-600'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3 flex-1">
-                      <input
-                        type="checkbox"
-                        checked={selectedData.includes(data.analysisId)}
-                        onChange={() => toggleItem(data.analysisId)}
-                        className="mt-1 w-4 h-4 rounded border-slate-600"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <svg
-                            className="w-4 h-4 text-slate-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                            />
-                          </svg>
-                          <span className="font-medium">{data.videoFilename}</span>
-                        </div>
-                        <div className="text-xs text-slate-400 mb-3">
-                          {new Date(data.createdAt).toLocaleDateString('ko-KR')}
-                        </div>
-                        <div className="flex gap-6 text-sm">
-                          <div>
-                            <span className="text-slate-400">위험도: </span>
-                            <span className="font-semibold">{data.overallRiskScore?.toFixed(1) ?? '-'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    {data.riskGrade && <StatusBadge status={data.riskGrade as 'GOOD' | 'NORMAL' | 'CAUTION' | 'DANGER'} />}
-                  </div>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Model Information */}
-        <div className="bg-navy-800 border border-slate-700 rounded-lg p-6 mb-8">
-          <h2 className="text-lg font-semibold mb-6">모델 정보</h2>
-
-          <div className="grid grid-cols-2 gap-8 mb-6">
-            <div>
-              <h3 className="font-medium mb-3">분석 항목</h3>
-              <ul className="space-y-2 text-sm text-slate-300">
-                <li>• 어깨 스트레스 분석</li>
-                <li>• 손목 부하 평가</li>
-                <li>• 무릎 안정성 검사</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-medium mb-3">측정 지표</h3>
-              <ul className="space-y-2 text-sm text-slate-300">
-                <li>• 팔꿈치 부담 측정</li>
-                <li>• 척추 각도 검사</li>
-                <li>• 고관절 회전 분석</li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <h3 className="font-medium mb-3">모델 특징</h3>
-              <ul className="space-y-2 text-sm text-slate-300">
-                <li>• 개인 투구 패턴 학습</li>
-                <li>• 실시간 위험도 평가</li>
-                <li>• 맞춤형 개선 권장사항</li>
-                <li>• 지속적 정확도 향상</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-medium mb-3">업데이트 정보</h3>
-              <p className="text-sm text-slate-400">
-                새로운 분석 데이터를 선택하여 모델을 재학습하면 더욱 정확한 분석 결과를 제공합니다. 다양한 투구
-                타입(패스트볼, 커브볼, 슬라이더)의 영상을 선택하여 모델 정확도를 향상시킬 수 있습니다.
-              </p>
-            </div>
           </div>
         </div>
 
@@ -372,10 +341,10 @@ export default function AiModelPage() {
             <div className="flex-1">
               <h3 className="font-semibold mb-3 text-cyan-500">팁</h3>
               <ul className="space-y-2 text-sm text-slate-300">
-                <li>• 다양한 투구 타입(패스트볼, 커브볼, 슬라이더)의 영상을 선택하여 모델 정확도를 향상시킬 수 있습니다</li>
-                <li>• 최소 10개 이상의 분석 데이터를 학습하는 것을 권장합니다</li>
-                <li>• 정확한 품질 개선이 필요한 영상을 선택하면 더 정확한 분석이 가능합니다</li>
-                <li>• 신규 분석 데이터를 추가하면 모델이 자동으로 재학습됩니다</li>
+                <li>• 모델 학습에는 최소 {MIN_TRAIN_VIDEOS}개의 투구 영상이 필요합니다</li>
+                <li>• 전신이 프레임 안에 보이고 카메라를 고정해 촬영한 영상이 좋습니다</li>
+                <li>• 학습이 완료되면 업로드 페이지에서 영상을 분석할 수 있습니다</li>
+                <li>• 이후 업로드한 분석 영상으로 모델이 자동으로 추가 학습됩니다</li>
               </ul>
             </div>
           </div>

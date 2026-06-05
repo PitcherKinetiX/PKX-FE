@@ -185,7 +185,7 @@ export default function ComparisonPage() {
         {/* Three Metrics Comparison */}
         <div className="grid grid-cols-3 gap-6 mb-8">
           <div className="bg-navy-800 border border-slate-700 rounded-lg p-6">
-            <h3 className="text-sm text-slate-400 mb-4">전체 위험도</h3>
+            <h3 className="text-sm text-slate-400 mb-4">종합 투구 점수</h3>
             <div className="flex items-center justify-between">
               <span className="text-3xl font-bold">{coreMetrics.overallRiskScore.baselineValue.toFixed(1)}</span>
               <svg className="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

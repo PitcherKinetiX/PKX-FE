@@ -245,7 +245,7 @@ export default function HistoryPage() {
 
                         {analysis.overallRiskScore != null && (
                           <div className="mb-4">
-                            <p className="text-xs text-slate-400 mb-1">전체 위험도</p>
+                            <p className="text-xs text-slate-400 mb-1">종합 투구 점수</p>
                             <p className="text-2xl font-bold">{analysis.overallRiskScore.toFixed(0)}</p>
                           </div>
                         )}

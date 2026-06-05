@@ -267,9 +267,11 @@ export default function HistoryPage() {
                           </button>
                         ) : (
                           <p className="text-xs text-slate-500">
-                            {analysis.status === 'PROCESSING' || analysis.status === 'PENDING'
-                              ? '분석 진행 중...'
-                              : '분석 실패'}
+                            {analysis.status === 'QUEUED'
+                              ? '분석 대기 중...'
+                              : analysis.status === 'PROCESSING' || analysis.status === 'PENDING' || analysis.status === 'UPLOADING'
+                                ? '분석 진행 중...'
+                                : '분석 실패'}
                           </p>
                         )}
                       </div>

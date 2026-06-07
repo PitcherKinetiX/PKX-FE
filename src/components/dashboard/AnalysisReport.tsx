@@ -164,7 +164,7 @@ export default function AnalysisReport({ result }: { result: AnalysisResult }) {
                 <li key={f.index} className="flex items-center justify-between text-sm">
                   <span className="text-slate-300">{f.name}</span>
                   <span className={f.level === '위험' ? 'text-red-400 font-medium' : 'text-amber-400 font-medium'}>
-                    {f.level} ({(f.userError * 100).toFixed(1)}%)
+                    {f.level} (일반 대비 {f.generalError > 0 ? Math.round((f.userError / f.generalError) * 100) : 0}%)
                   </span>
                 </li>
               ))}
@@ -202,7 +202,10 @@ export default function AnalysisReport({ result }: { result: AnalysisResult }) {
 
       {/* ── 세부 지표 테이블 ── */}
       <div className="bg-navy-800 border border-slate-700 rounded-lg p-6">
-        <h3 className="font-semibold mb-4">세부 지표 전체 (13개)</h3>
+        <h3 className="font-semibold mb-1">세부 지표 전체 (13개)</h3>
+        <p className="text-xs text-slate-500 mb-4">
+          일반 대비: 일반 모델 오차 대비 내 모델 오차 비율 · 100% 미만일수록 내 투구 패턴을 잘 반영
+        </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -210,8 +213,7 @@ export default function AnalysisReport({ result }: { result: AnalysisResult }) {
                 <th className="text-left py-2 px-3">#</th>
                 <th className="text-left py-2 px-3">특징</th>
                 <th className="text-left py-2 px-3">유형</th>
-                <th className="text-right py-2 px-3">사용자 오차</th>
-                <th className="text-right py-2 px-3">일반 오차</th>
+                <th className="text-right py-2 px-3">일반 대비</th>
                 <th className="text-right py-2 px-3">피크 속도</th>
                 <th className="text-right py-2 px-3">위험 비율</th>
                 <th className="text-center py-2 px-3">상태</th>
@@ -231,8 +233,17 @@ export default function AnalysisReport({ result }: { result: AnalysisResult }) {
                       {f.type === 'angle' ? '각도' : '속도'}
                     </span>
                   </td>
-                  <td className="py-2 px-3 text-right text-slate-300">{(f.userError * 100).toFixed(1)}%</td>
-                  <td className="py-2 px-3 text-right text-slate-300">{(f.generalError * 100).toFixed(1)}%</td>
+                  <td className="py-2 px-3 text-right">
+                    {(() => {
+                      const rel = f.generalError > 0 ? (f.userError / f.generalError) * 100 : 0;
+                      const cls =
+                        rel >= 135 ? 'text-red-400' :
+                        rel >= 110 ? 'text-amber-400' :
+                        rel >= 95 ? 'text-cyan-400' :
+                        'text-emerald-400';
+                      return <span className={cls}>{Math.round(rel)}%</span>;
+                    })()}
+                  </td>
                   <td className="py-2 px-3 text-right text-slate-400">
                     {f.peakValue != null ? `${f.peakValue.toFixed(1)} deg/s` : '—'}
                   </td>

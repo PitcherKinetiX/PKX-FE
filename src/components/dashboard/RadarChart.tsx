@@ -57,7 +57,7 @@ export default function RadarChart({ features }: RadarChartProps) {
     metric: FEATURE_LABELS[f.name] || f.name,
     value: levelToScore(f.level),
     level: f.level,
-    userError: (f.userError * 100).toFixed(1),
+    relErr: f.generalError > 0 ? Math.round((f.userError / f.generalError) * 100) : 0,
     fullMark: 100,
   }));
 
@@ -77,8 +77,8 @@ export default function RadarChart({ features }: RadarChartProps) {
           />
           <Tooltip
             formatter={(_value, _name, props) => {
-              const { level, userError } = props.payload;
-              return [`${level} (오차: ${userError}%)`, '상태'];
+              const { level, relErr } = props.payload;
+              return [`${level} (일반 대비 ${relErr}%)`, '상태'];
             }}
             contentStyle={{
               backgroundColor: '#020617',
